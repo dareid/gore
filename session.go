@@ -133,7 +133,7 @@ func (s *session) prepareStringCommand(cmd string) []byte {
 	return cmdBytes
 }
 
-func (s *session) sendCommand(cmdType command, cmd string) Packet {
+func (s *session) exeCommand(cmdType command, cmd string) {
 	cmdBytes := s.prepareStringCommand(cmd)
 	buf := new(bytes.Buffer)
 	//command
@@ -148,6 +148,10 @@ func (s *session) sendCommand(cmdType command, cmd string) Packet {
 
 	s.readWriter.Write(buf.Bytes())
 	s.readWriter.Flush()
+}
+
+func (s *session) sendCommand(cmdType command, cmd string) Packet {
+	s.exeCommand(cmdType, cmd)
 
 	rep := binary.LittleEndian.Uint32(s.readNBytes(4))
 	r1 := binary.LittleEndian.Uint32(s.readNBytes(4))
@@ -159,4 +163,18 @@ func (s *session) sendCommand(cmdType command, cmd string) Packet {
 
 	results := s.readNBytes(int(r1))
 	return newPacket(int(rep), results)
+}
+
+//sendvoidCommand will always use voidEval 0x4
+func (s *session) sendvoidCommand(cmd string) error {
+	s.exeCommand(cmdvoidEval, cmd)
+	rep := binary.LittleEndian.Uint32(s.readNBytes(4))
+	// r1 := binary.LittleEndian.Uint32(s.readNBytes(4))
+	s.readNBytes(8)
+
+	p := &packet{int(rep), nil, nil}
+	if p.IsError() {
+		return p.getError()
+	}
+	return nil
 }

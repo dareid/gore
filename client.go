@@ -18,6 +18,9 @@ type RClient interface {
 	// EvaluateSync evaluates an R command synchronously, resulting in a Packet.
 	EvaluateSync(command string) Packet
 
+	// VoidEval evalutes an R command without return any output, but error
+	VoidEval(command string) error
+
 	// GetReadWriteCloser obtains a connection to obtain data from the client
 	GetReadWriteCloser() (io.ReadWriteCloser, error)
 }
@@ -55,6 +58,16 @@ func (r *roger) EvaluateSync(command string) Packet {
 	defer sess.close()
 	packet := sess.sendCommand(cmdEval, command+"\n")
 	return packet
+}
+
+func (r *roger) VoidEval(command string) error {
+	sess, err := newSession(r, r.user, r.password)
+	if err != nil {
+		return err
+	}
+	defer sess.close()
+	err = sess.sendvoidCommand(command + "\n")
+	return err
 }
 
 func (r *roger) Evaluate(command string) <-chan Packet {
