@@ -80,7 +80,7 @@ go get github.com/senseyeio/roger
 ```
 
 ##Testing
-To ensure the library functions correctly, the end to end functionality must be tested. This is achieved using [Docker](https://docs.docker.com) and [Docker Compose](https://docs.docker.com/compose). To run tests, ensure you have both Docker and Docker Compose installed, then run `docker-compose build && docker-compose up -d` from within the test directory. This command will build and start a docker container containing multiple RServe servers. These servers will be utilized when running `go test ./...` from the project's base directory. To stop the docker container call `docker-compose stop` from the test directory.
+To ensure the library functions correctly, the end to end functionality must be tested. This is achieved using [Docker](https://docs.docker.com) and [Docker Compose](https://docs.docker.com/compose). To run tests, ensure you have both Docker and Docker Compose installed, then run `docker-compose build && docker-compose up -d` from within the test directory. This command will build and start a docker container containing multiple RServe servers. These servers will be utilized when running `go test` from the project's base directory. To stop the docker container call `docker-compose stop` from the test directory.
 
 ## Contributing
 Issues, pull requests and questions are welcomed. If required, assistance can be found in the project's [gitter chat room](https://gitter.im/senseyeio/roger).
