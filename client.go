@@ -18,15 +18,16 @@ type RClient interface {
 	// EvaluateSync evaluates an R command synchronously, resulting in a Packet.
 	EvaluateSync(command string) Packet
 
-	// VoidEval evalutes an R command without return any output, but error
-	VoidEval(command string) error
-
 	// GetReadWriteCloser obtains a connection to obtain data from the client
 	GetReadWriteCloser() (io.ReadWriteCloser, error)
+
+	//Close connection
+	Close()
 }
 
 type roger struct {
 	address  *net.TCPAddr
+	sess     *session
 	user     string
 	password string
 }
@@ -49,10 +50,22 @@ func NewRClientWithAuth(host string, port int64, user, password string) (RClient
 		password: password,
 	}
 
+	sess, err := newSession(rClient, user, password)
+	if err != nil {
+		return nil, err
+	}
+
+	rClient.sess = sess
+
 	if _, err = rClient.Eval("'Test session connection'"); err != nil {
 		return nil, err
 	}
 	return rClient, nil
+}
+
+//Close R client connection
+func (r *roger) Close() {
+	r.sess.close()
 }
 
 func (r *roger) EvaluateSync(command string) Packet {
@@ -65,16 +78,6 @@ func (r *roger) EvaluateSync(command string) Packet {
 	return packet
 }
 
-func (r *roger) VoidEval(command string) error {
-	sess, err := newSession(r, r.user, r.password)
-	if err != nil {
-		return err
-	}
-	defer sess.close()
-	err = sess.sendvoidCommand(command + "\n")
-	return err
-}
-
 func (r *roger) Evaluate(command string) <-chan Packet {
 	out := make(chan Packet)
 	go func() {
@@ -85,7 +88,8 @@ func (r *roger) Evaluate(command string) <-chan Packet {
 }
 
 func (r *roger) Eval(command string) (interface{}, error) {
-	return r.EvaluateSync(command).GetResultObject()
+	packet := r.sess.sendCommand(cmdEval, command+"\n")
+	return packet.GetResultObject()
 }
 
 func (r *roger) GetReadWriteCloser() (io.ReadWriteCloser, error) {

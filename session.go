@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"strings"
 )
 
 type session struct {
@@ -119,6 +120,7 @@ func (s *session) setHdr(valueType dataType, valueLength int, buf []byte) {
 }
 
 func (s *session) prepareStringCommand(cmd string) []byte {
+	cmd = strings.Replace(cmd, "\r", "\n", -1) //avoid potential issue when loading external r script block
 	rawCmdBytes := s.toCharset(cmd)
 	requiredLength := len(rawCmdBytes) + 1
 	//make sure length is divisible by 4
@@ -163,18 +165,4 @@ func (s *session) sendCommand(cmdType command, cmd string) Packet {
 
 	results := s.readNBytes(int(r1))
 	return newPacket(int(rep), results)
-}
-
-//sendvoidCommand will always use voidEval 0x4
-func (s *session) sendvoidCommand(cmd string) error {
-	s.exeCommand(cmdvoidEval, cmd)
-	rep := binary.LittleEndian.Uint32(s.readNBytes(4))
-	// r1 := binary.LittleEndian.Uint32(s.readNBytes(4))
-	s.readNBytes(8)
-
-	p := &packet{int(rep), nil, nil}
-	if p.IsError() {
-		return p.getError()
-	}
-	return nil
 }
