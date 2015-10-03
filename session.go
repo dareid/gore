@@ -18,6 +18,9 @@ type Session interface {
 
 	// Close closes a RServe session. Sessions must be closed after use.
 	Close()
+
+	//StructToR assign struct field values to R
+	StructToR(interface{}) error
 }
 
 type authType int
