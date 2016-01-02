@@ -14,16 +14,28 @@ func Parse(buf []byte, offset int) (interface{}, error) {
 	return obj, err
 }
 
-func getLength(buf []byte, offset int, isLong bool) int {
-	if isLong {
-		return int(binary.LittleEndian.Uint32(buf[offset+1 : offset+4]))
+func getLength(buf []byte, offset int, isLong bool) (int, error) {
+	throwError := func() (int, error) {
+		return offset, errors.New("Abruptly reached end of buffer")
 	}
-	return int(uint32(buf[offset+1]) | (uint32(buf[offset+2]) << 8) | (uint32(buf[offset+3]) << 16))
+	if isLong {
+		if len(buf) <= offset+4 {
+			return throwError()
+		}
+		return int(binary.LittleEndian.Uint32(buf[offset+1 : offset+4])), nil
+	}
+	if len(buf) <= offset+3 {
+		return throwError()
+	}
+	return int(uint32(buf[offset+1]) | (uint32(buf[offset+2]) << 8) | (uint32(buf[offset+3]) << 16)), nil
 }
 
 func parseReturningOffset(buf []byte, offset int) (interface{}, int, error) {
 	isLong := ((buf[offset] & 64) != 0)
-	length := getLength(buf, offset, isLong)
+	length, err := getLength(buf, offset, isLong)
+	if err != nil {
+		return nil, len(buf), err
+	}
 	xt := expressionType(buf[offset] & 63)
 
 	hasAtt := ((buf[offset] & 128) != 0)

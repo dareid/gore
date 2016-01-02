@@ -12,7 +12,11 @@ func parseVectorAttr(attr interface{}, vectorArr []interface{}, offset int) (int
 	}
 	names, ok := attrMap["n"].([]string)
 	if !ok {
-		return vectorArr, offset, nil
+		name, ok := attrMap["n"].(string)
+		if !ok {
+			return nil, offset, errors.New("Vector names not parsed correctly")
+		}
+		names = []string{name}
 	}
 	if len(names) != len(vectorArr) {
 		return nil, offset, errors.New("Vector name and value quantity mismatch")
@@ -33,7 +37,7 @@ func parseVector(attr interface{}, buf []byte, offset, end int) (interface{}, in
 		vectorEntry, newOffset, err := parseReturningOffset(buf, offset)
 		offset = newOffset
 		if err != nil {
-			vectorArr = append(vectorArr, err)
+			log.Println("Warning: Error whilst constructing vector: " + err.Error())
 		} else {
 			vectorArr = append(vectorArr, vectorEntry)
 		}

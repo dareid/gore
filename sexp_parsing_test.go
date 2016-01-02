@@ -78,6 +78,14 @@ func TestListParsing(t *testing.T) {
 	assert.Equal(t, list["char"], "test")
 }
 
+func TestSingleItemListParsing(t *testing.T) {
+	obj, err := getResultObject("list(echo=TRUE)")
+	assert.Nil(t, err)
+	list, ok := obj.(map[string]interface{})
+	assert.Equal(t, ok, true, "Return obj should be a map")
+	assert.Equal(t, list["echo"], true, "Expecting a 'echo' to equal TRUE")
+}
+
 func TestNestedListParsing(t *testing.T) {
 	obj, _ := getResultObject("l <- list(); l$top <- 2; l$nested <- list(); l$nested$inner <- 3; l$nested$internal <- c(4,2,1); l")
 	list, ok := obj.(map[string]interface{})

@@ -48,8 +48,9 @@ Roger currently supports the following response types:
  - booleans and boolean arrays
  - doubles and double arrays
  - ints and int arrays
- - lists (beta)
- - vectors (beta)
+ - complex and complex arrays
+ - lists
+ - raw byte arrays
 
 With the use of JSON, this capability can be used to transfer any serializable object.
 
