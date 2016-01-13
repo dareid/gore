@@ -4,6 +4,7 @@ package sexp
 import (
 	"encoding/binary"
 	"errors"
+	"log"
 	"strconv"
 )
 
@@ -46,6 +47,8 @@ func parseReturningOffset(buf []byte, offset int) (interface{}, int, error) {
 	}
 	end := offset + length
 
+	log.Printf("parseREXP: type=%v, len=%v, hasAtt=%v, isLong=%v\n", xt, length, hasAtt, isLong)
+
 	var attr interface{}
 	if hasAtt {
 		var err error
@@ -61,6 +64,19 @@ func parseReturningOffset(buf []byte, offset int) (interface{}, int, error) {
 	if xt == xtInt {
 		return parseInt(buf, offset, end)
 	}
+	if xt == xtString {
+		return parseString(buf, offset, end)
+	}
+	/*
+		if xt == xtS4 {
+			//TODO
+			return nil, offset, errors.New("Unimplemented expression type: XT_S4")
+		}
+		if xt == xtClos {
+			//TODO
+			return nil, offset, errors.New("Unimplemented expression type: XT_CLOS")
+		}
+	*/
 	if xt == xtSymName {
 		return parseSymName(buf, offset, end)
 	}
@@ -79,14 +95,38 @@ func parseReturningOffset(buf []byte, offset int) (interface{}, int, error) {
 	if xt == xtVector {
 		return parseVector(attr, buf, offset, end)
 	}
+	/*
+		if xt == xtListNoTag {
+			return parseListNoTag(attr, buf, offset, end)
+		}
+	*/
 	if xt == xtListTag {
 		return parseListTag(buf, offset, end)
 	}
+	/*
+		if xt == xtLangNoTag {
+			return parseListNoTag(attr, buf, offset, end)
+		}
+	*/
+	if xt == xtLangTag {
+		return parseLangTag(buf, offset, end)
+	}
+	/*
+		if xt == xtExpVector {
+			return parseVector(attr, buf, offset, end)
+		}
+	*/
 	if xt == xtRaw {
 		return parseRaw(buf, offset, end)
 	}
 	if xt == xtComplexArray {
 		return parseComplexArray(buf, offset, end)
 	}
+	/*
+		if xt == xtUnknown {
+			//TODO
+			return nil, offset, errors.New("Unimplemented expression type: XT_UNKNOWN")
+		}
+	*/
 	return nil, offset, errors.New("Unsupported expression type: " + strconv.Itoa(int(xt)))
 }
