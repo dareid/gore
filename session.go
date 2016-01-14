@@ -293,16 +293,16 @@ func (s *session) Assign(symbol string, value interface{}) (err error) {
 		err = s.AssignDoubleArray(symbol, value.([]float64))
 	case []int32:
 		log.Printf("session assign, type is []int32, value is %v\n", value)
-		s.AssignIntArray(symbol, value.([]int32))
+		err = s.AssignIntArray(symbol, value.([]int32))
 	case []string:
 		log.Printf("session assign, type is []string, value is %v\n", value)
-		s.AssignStrArray(symbol, value.([]string))
+		err = s.AssignStrArray(symbol, value.([]string))
 	case []byte:
 		log.Printf("session assign, type is []byte, value is %v\n", value)
-		s.AssignByteArray(symbol, value.([]byte))
+		err = s.AssignByteArray(symbol, value.([]byte))
 	case string:
 		log.Printf("session assign, type is string, value is %v\n", value)
-		s.AssignStr(symbol, value.(string))
+		err = s.AssignStr(symbol, value.(string))
 	default:
 		log.Printf("session assign, type is not supported\n")
 	}
@@ -386,18 +386,253 @@ func (s *session) AssignDoubleArray(symbol string, value []float64) (err error) 
 	return
 }
 
-func (s *session) AssignIntArray(symbol string, value []int32) {
+func (s *session) AssignIntArray(symbol string, value []int32) (err error) {
+	rl := len(value)*4 + 4
+	if rl > 0xfffff0 {
+		rl += 4
+	}
+	symn := []byte(symbol)
+	sl := len(symn) + 1
+	if (sl & 3) > 0 {
+		sl = (sl & 0xfffffc) + 4
+	}
+
+	//log.Println("rl=", rl, "sl=", sl)
+
+	var rq []byte
+
+	if rl > 0xfffff0 {
+		rq = make([]byte, sl+rl+12)
+	} else {
+		rq = make([]byte, sl+rl+8)
+	}
+
+	ic := 0
+	for ; ic < len(symn); ic++ {
+		rq[ic+4] = symn[ic]
+	}
+	for ic < sl {
+		rq[ic+4] = 0
+		ic++
+	}
+
+	s.setHdrOffset(dtString, sl, rq, 0)
+	s.setHdrOffset(dtSexp, rl, rq, sl+4)
+
+	var off int
+	if rl > 0xfffff0 {
+		off = sl + 12
+		s.setHdrOffset(32, rl-8, rq, off)
+		off += 8
+	} else {
+		off = sl + 8
+		s.setHdrOffset(32, rl-4, rq, off)
+		off += 4
+	}
+
+	i := 0
+	io := off
+	for i < len(value) {
+		//		log.Println("len(rq)=", len(rq), "i=", i, "io=", io, "value[i]=", value[i])
+		s.setInt(int(value[i]), rq, io)
+		i++
+		io += 4
+	}
+
+	rp := s.request(cmdSetSexp, rq, 0, len(rq))
+	if rp != nil && rp.IsOk() {
+		return
+	}
+	err = errors.New("Assign failed")
+	return
+}
+
+func (s *session) AssignStrArray(symbol string, value []string) (err error) {
+	rl := 0
+	i := 0
+	for i < len(value) {
+		b := []byte(value[i])
+		if len(b) > 0 {
+			rl += len(b)
+		}
+		rl++
+		i++
+	}
+	if (rl & 3) > 0 {
+		rl = rl - (rl & 3) + 4
+	}
+	if rl > 0xfffff0 {
+		rl += 4
+	}
+	rl += 4
+
+	symn := []byte(symbol)
+	sl := len(symn) + 1
+	if (sl & 3) > 0 {
+		sl = (sl & 0xfffffc) + 4
+	}
+
+	//	log.Println("rl=", rl, "sl=", sl)
+
+	var rq []byte
+
+	if rl > 0xfffff0 {
+		rq = make([]byte, sl+rl+12)
+	} else {
+		rq = make([]byte, sl+rl+8)
+	}
+
+	ic := 0
+	for ; ic < len(symn); ic++ {
+		rq[ic+4] = symn[ic]
+	}
+	for ic < sl {
+		rq[ic+4] = 0
+		ic++
+	}
+
+	s.setHdrOffset(dtString, sl, rq, 0)
+	s.setHdrOffset(dtSexp, rl, rq, sl+4)
+
+	var off int
+	if rl > 0xfffff0 {
+		off = sl + 12
+		s.setHdrOffset(34, rl-8, rq, off)
+		off += 8
+	} else {
+		off = sl + 8
+		s.setHdrOffset(34, rl-4, rq, off)
+		off += 4
+	}
+
+	i = 0
+	io := off
+	for i < len(value) {
+		b := []byte(value[i])
+		if len(b) > 0 {
+			copy(rq[io:io+len(b)], b[:])
+			io += len(b)
+		}
+		rq[io] = 0
+		io++
+		i++
+	}
+	i = io - off
+	for (i & 3) != 0 {
+		rq[io] = 1
+		io++
+		i++
+	}
+
+	rp := s.request(cmdSetSexp, rq, 0, len(rq))
+	if rp != nil && rp.IsOk() {
+		return
+	}
+	err = errors.New("Assign failed")
+	return
 
 }
 
-func (s *session) AssignStrArray(symbol string, value []string) {
+func (s *session) AssignByteArray(symbol string, value []byte) (err error) {
+	rl := len(value) + 4
+	if (rl & 3) > 0 {
+		rl = rl - (rl & 3) + 4
+	}
+	if rl > 0xfffff0 {
+		rl += 4
+	}
+	rl += 4
 
+	symn := []byte(symbol)
+	sl := len(symn) + 1
+	if (sl & 3) > 0 {
+		sl = (sl & 0xfffffc) + 4
+	}
+
+	//	log.Println("rl=", rl, "sl=", sl)
+
+	var rq []byte
+
+	if rl > 0xfffff0 {
+		rq = make([]byte, sl+rl+12)
+	} else {
+		rq = make([]byte, sl+rl+8)
+	}
+
+	ic := 0
+	for ; ic < len(symn); ic++ {
+		rq[ic+4] = symn[ic]
+	}
+	for ic < sl {
+		rq[ic+4] = 0
+		ic++
+	}
+
+	s.setHdrOffset(dtString, sl, rq, 0)
+	s.setHdrOffset(dtSexp, rl, rq, sl+4)
+
+	var off int
+	if rl > 0xfffff0 {
+		off = sl + 12
+		s.setHdrOffset(37, rl-8, rq, off)
+		off += 8
+	} else {
+		off = sl + 8
+		s.setHdrOffset(37, rl-4, rq, off)
+		off += 4
+	}
+
+	s.setInt(len(value), rq, off)
+	off += 4
+	copy(rq[off:off+len(value)], value)
+
+	rp := s.request(cmdSetSexp, rq, 0, len(rq))
+	if rp != nil && rp.IsOk() {
+		return
+	}
+	err = errors.New("Assign failed")
+	return
 }
 
-func (s *session) AssignByteArray(symbol string, value []byte) {
+func (s *session) AssignStr(symbol string, value string) (err error) {
+	symn := []byte(symbol)
+	ctn := []byte(value)
 
-}
+	sl := len(symn) + 1
+	cl := len(ctn) + 1
 
-func (s *session) AssignStr(symbol string, value string) {
+	if (sl & 3) > 0 {
+		sl = (sl & 0xfffffc) + 4
+	}
+	if (cl & 3) > 0 {
+		cl = (cl & 0xfffffc) + 4
+	}
 
+	rq := make([]byte, sl+4+cl+4)
+
+	ic := 0
+	for ; ic < len(symn); ic++ {
+		rq[ic+4] = symn[ic]
+	}
+	for ic < sl {
+		rq[ic+4] = 0
+		ic++
+	}
+	for ic = 0; ic < len(ctn); ic++ {
+		rq[ic+sl+8] = ctn[ic]
+	}
+	for ic < cl {
+		rq[ic+sl+8] = 0
+		ic++
+	}
+
+	s.setHdrOffset(dtString, sl, rq, 0)
+	s.setHdrOffset(dtString, cl, rq, sl+4)
+
+	rp := s.request(cmdSetSexp, rq, 0, len(rq))
+	if rp != nil && rp.IsOk() {
+		return
+	}
+	err = errors.New("Assign failed")
+	return
 }
