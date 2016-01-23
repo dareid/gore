@@ -6,6 +6,7 @@ const (
 	xtNull         expressionType = 0  /* P data: [0] */
 	xtInt          expressionType = 1  /* P data: [4]int */
 	xtString       expressionType = 3  /* P data: [n]char null-term. strg. */
+	xtLang         expressionType = 4  /* - */
 	xtS4           expressionType = 7  /* P data: [0] */
 	xtVector       expressionType = 16 /* P data: [?]REXP,REXP,.. */
 	xtClos         expressionType = 18 /* P X formals, X body  (closure; since 0.1-5) */

@@ -67,6 +67,9 @@ func parseReturningOffset(buf []byte, offset int) (interface{}, int, error) {
 	if xt == xtString {
 		return parseString(buf, offset, end)
 	}
+	if xt == xtLang {
+		return parseLang(buf, offset, end)
+	}
 	/*
 		if xt == xtS4 {
 			//TODO
@@ -94,19 +97,17 @@ func parseReturningOffset(buf []byte, offset int) (interface{}, int, error) {
 	if xt == xtVector {
 		return parseVector(attr, buf, offset, end)
 	}
-	/*
-		if xt == xtListNoTag {
-			return parseListNoTag(attr, buf, offset, end)
-		}
-	*/
+	if xt == xtListNoTag {
+		return parseListNoTag(attr, buf, offset, end)
+	}
 	if xt == xtListTag {
 		return parseListTag(buf, offset, end)
 	}
-	/*
-		if xt == xtLangNoTag {
-			return parseListNoTag(attr, buf, offset, end)
-		}
-	*/
+
+	if xt == xtLangNoTag {
+		return parseListNoTag(attr, buf, offset, end)
+	}
+
 	if xt == xtLangTag {
 		return parseLangTag(buf, offset, end)
 	}
@@ -119,11 +120,10 @@ func parseReturningOffset(buf []byte, offset int) (interface{}, int, error) {
 	if xt == xtComplexArray {
 		return parseComplexArray(buf, offset, end)
 	}
-	/*
-		if xt == xtUnknown {
-			//TODO
-			return nil, offset, errors.New("Unimplemented expression type: XT_UNKNOWN")
-		}
-	*/
+
+	if xt == xtUnknown {
+		return parseUnknown(buf, offset, end)
+	}
+
 	return nil, offset, errors.New("Unsupported expression type: " + strconv.Itoa(int(xt)))
 }
