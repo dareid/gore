@@ -2,7 +2,7 @@ package roger
 
 import (
 	"errors"
-	"github.com/senseyeio/roger/sexp"
+	"github.com/qingdimeng/roger/sexp"
 	"strconv"
 )
 
@@ -17,6 +17,7 @@ type Packet interface {
 
 	// IsError returns a boolean defining whether the Packet contains an error.
 	IsError() bool
+	IsOk() bool
 }
 
 type packet struct {
@@ -40,6 +41,10 @@ func newErrorPacket(err error) Packet {
 
 func (p *packet) IsError() bool {
 	return p.err != nil || p.cmd&15 == 2
+}
+
+func (p *packet) IsOk() bool {
+	return p.cmd&15 == 1
 }
 
 func (p *packet) getStatusCode() int {
