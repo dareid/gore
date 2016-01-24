@@ -18,8 +18,8 @@ func parseBoolArray(buf []byte, offset int, end int) (interface{}, int, error) {
 	}
 
 	if len(boolArr) == 1 {
-		return boolArr[0], offset, nil
+		return boolArr[0], end, nil
 	}
 
-	return boolArr, offset, nil
+	return boolArr, end, nil
 }

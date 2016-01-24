@@ -127,3 +127,11 @@ func TestComplexArrayParsing(t *testing.T) {
 	assert.Equal(t, ok, true, "Return obj should be an complex128 array")
 	assert.Equal(t, cArr, []complex128{complex(1, 2.22), complex(100, -222)})
 }
+
+func TestLongResponse(t *testing.T) {
+	obj, err := getResultObject("paste(rep(\"a\", 15000000), sep=\"\", collapse = \"\")")
+	assert.Nil(t, err)
+	str, ok := obj.(string)
+	assert.Equal(t, ok, true, "Return obj should be a string")
+	assert.Equal(t, len(str), 15000000, "String length expected to be 15000000 characters")
+}

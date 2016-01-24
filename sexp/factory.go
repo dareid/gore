@@ -22,7 +22,7 @@ func getLength(buf []byte, offset int, isLong bool) (int, error) {
 		if len(buf) <= offset+4 {
 			return throwError()
 		}
-		return int(binary.LittleEndian.Uint32(buf[offset+1 : offset+4])), nil
+		return int(binary.LittleEndian.Uint32(buf[offset+1 : offset+5])), nil
 	}
 	if len(buf) <= offset+3 {
 		return throwError()
